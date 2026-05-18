@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install --no-cache-dir gevent gevent-websocket gunicorn
 
 # 3. Copia o resto dos arquivos
-COPY backend
+COPY ..
 
 EXPOSE 5000
 
