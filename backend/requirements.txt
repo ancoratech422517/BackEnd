@@ -4,6 +4,7 @@ Flask-SQLAlchemy
 Flask-SocketIO
 Flask-Talisman
 Flask-JWT-Extended
+Flask-Migrate
 gevent
 gevent-websocket
 gunicorn
