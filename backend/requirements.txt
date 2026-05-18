@@ -1,4 +1,4 @@
--absl-py==2.4.0
+absl-py==2.4.0
 alembic==1.18.4
 anyio==4.13.0
 arrow==1.4.0
