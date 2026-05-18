@@ -4,7 +4,8 @@ Flask-SQLAlchemy
 Flask-SocketIO
 Flask-Talisman
 Flask-JWT-Extended
-eventlet
+gevent
+gevent-websocket
 gunicorn
 cloudinary
 supabase
