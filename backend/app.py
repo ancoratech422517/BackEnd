@@ -65,7 +65,7 @@ CORS(app, resources={r"/*": {
         "http://192.168.11.1",
         "http://192.168.11.1:5173",
         "http://10.140.176.115:5173",
-        "https://ancoras.netlify.app"
+        "https://ancora-ecomerce.netlify.app"
     ],
     "supports_credentials": True,
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
