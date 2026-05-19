@@ -16,5 +16,6 @@ socketio = SocketIO(
     cookie='io',  # MUDOU: True -> 'io' ou remove a linha toda
     async_mode='threading',
     logger=True,
-    engineio_logger=True
+    engineio_logger=True,
+    async_mode='gevent'
 )
