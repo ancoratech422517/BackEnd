@@ -11,7 +11,6 @@ from flask_talisman import Talisman
 from flask_migrate import Migrate
 import cloudinary
 
-
 PORT = int(os.environ.get("PORT", 5000))
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
@@ -73,11 +72,10 @@ CORS(app, resources={r"/*": {
     "allow_headers": ["Content-Type", "Authorization"]
 }})
 
-# ===================== AFTER REQUEST — garante headers CORS em todas as respostas =====================
+# ===================== AFTER REQUEST =====================
 @app.after_request
 def after_request(response):
     origin = response.headers.get('Access-Control-Allow-Origin')
-    # Só adiciona se o flask-cors ainda não definiu
     if not origin:
         response.headers.add('Access-Control-Allow-Origin', 'https://ecomerce-penelaka.netlify.app')
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
@@ -94,14 +92,13 @@ cloudinary.config(
 )
 
 # ===================== TALISMAN =====================
-# CORRIGIDO: strict_transport_security=False para não bloquear headers CORS
 Talisman(app,
     content_security_policy={
         'default-src': "'self'",
         'img-src': ["'self'", "data:", "blob:", "*.cloudinary.com"]
     },
     force_https=False,
-    strict_transport_security=False  # CORRIGIDO: estava a bloquear headers CORS
+    strict_transport_security=False
 )
 
 # ===================== BASE DE DADOS (NEON) =====================
@@ -121,7 +118,6 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'chave-secreta-desenvolviment
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'files')
 app.config['MAX_CONTENT_LENGTH'] = 2048 * 1024 * 1024
 
-# Configurações para Neon (pool e keep-alive)
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     "pool_pre_ping": True,
     "pool_recycle": 300,
@@ -149,6 +145,9 @@ def setup_database():
         except Exception as e:
             print(f"❌ Erro ao inicializar banco: {e}")
 
+# Executa a inicialização do banco fora do __main__ para funcionar no deploy
+setup_database()
+
 # ===================== REGISTO DOS BLUEPRINTS =====================
 app.register_blueprint(registrar)
 app.register_blueprint(users_bp)
@@ -173,8 +172,6 @@ app.register_blueprint(Depositar_Dinheiro)
 app.register_blueprint(messages_http_bp)
 
 if __name__ == '__main__':
-    setup_database()
-
     print("=" * 70)
     print("🚀 Servidor Flask + SocketIO iniciado!")
     print(f"🌍 Porta: {PORT} | Debug: {DEBUG}")
