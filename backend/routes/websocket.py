@@ -10,6 +10,6 @@ socketio = SocketIO(
         "http://127.0.0.1:5173",
         "http://192.168.11.1:5173",
         "http://10.140.176.115:5173",
-        "https://loja-taupe-psi.vercel.app"
+        "https://ecomerce-penelaka.netlify.app"
     ]
 )
