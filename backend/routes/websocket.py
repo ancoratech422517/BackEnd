@@ -1,6 +1,6 @@
 # routes/websocket.py
 from flask_socketio import SocketIO
-URL_FRONTEND_ANCORA = "https://ancoras.netlify.app/"
+URL_FRONTEND_ANCORA = "https://ancoras.netlify.app"
 socketio = SocketIO(
     cors_allowed_origins=[
         "http://localhost:5173",
