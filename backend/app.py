@@ -78,7 +78,7 @@ def after_request(response):
     origin = response.headers.get('Access-Control-Allow-Origin')
     # Só adiciona se o flask-cors ainda não definiu
     if not origin:
-        response.headers.add('Access-Control-Allow-Origin', 'https://ancora-ecomerce.netlify.app' ,"http://localhost:5173")
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:5173' ,"http://localhost:5173")
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
