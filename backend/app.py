@@ -11,6 +11,7 @@ from flask_talisman import Talisman
 from flask_migrate import Migrate
 import cloudinary
 
+
 PORT = int(os.environ.get("PORT", 5000))
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
