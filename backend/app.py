@@ -43,7 +43,7 @@ from routes.api_menssage_http import messages_http_bp
 
 import routes.websoket_conectUser
 import routes.websocket_aceitar_pedido_amizade
-import routes.websocket_recusar_pedido_amizade 
+import routes.websocket_recusar_pedido_amizade
 import routes.websocket_entrar_na_sala
 import routes.websocket_enviar_menssagem
 import routes.websocket_usuario_digitando
@@ -57,12 +57,14 @@ import routes.websocket_notificar_compra_usuario
 
 app = Flask(__name__)
 
-# CORS
-URL_FRONTEND_ANCORA = "http://192.168.11.1:5173"
+# ===================== CORS =====================
 CORS(app, resources={r"/*": {
     "origins": [
-        "http://127.0.0.1:5173", "http://localhost:5173", 
-        "http://192.168.11.1", "http://10.140.176.115:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://192.168.11.1",
+        "http://192.168.11.1:5173",
+        "http://10.140.176.115:5173",
         "https://ancoras.netlify.app"
     ],
     "supports_credentials": True,
@@ -70,27 +72,43 @@ CORS(app, resources={r"/*": {
     "allow_headers": ["Content-Type", "Authorization"]
 }})
 
-# Cloudinary
+# ===================== AFTER REQUEST — garante headers CORS em todas as respostas =====================
+@app.after_request
+def after_request(response):
+    origin = response.headers.get('Access-Control-Allow-Origin')
+    # Só adiciona se o flask-cors ainda não definiu
+    if not origin:
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:5173')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+    response.headers.add('Access-Control-Allow-Credentials', 'true')
+    return response
+
+# ===================== CLOUDINARY =====================
 cloudinary.config(
-    cloud_name = os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key = os.getenv("CLOUDINARY_API_KEY"),
-    api_secret = os.getenv("CLOUDINARY_API_SECRET"),
-    secure = True
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True
 )
 
-Talisman(app, 
-    content_security_policy={'default-src': "'self'", 'img-src': ["'self'", "data:", "blob:", "*.cloudinary.com"]},
-    force_https=False
+# ===================== TALISMAN =====================
+# CORRIGIDO: strict_transport_security=False para não bloquear headers CORS
+Talisman(app,
+    content_security_policy={
+        'default-src': "'self'",
+        'img-src': ["'self'", "data:", "blob:", "*.cloudinary.com"]
+    },
+    force_https=False,
+    strict_transport_security=False  # CORRIGIDO: estava a bloquear headers CORS
 )
 
-# ===================== CONFIGURAÇÃO DO NEON =====================
+# ===================== BASE DE DADOS (NEON) =====================
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 if DATABASE_URL:
-    # Ajuste caso venha com postgres://
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-    
     print("🔗 Usando Neon (PostgreSQL)")
 else:
     DATABASE_URL = "sqlite:///ecommerce.db"
@@ -102,7 +120,7 @@ app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'chave-secreta-desenvolviment
 app.config['UPLOAD_FOLDER'] = os.path.join('static', 'files')
 app.config['MAX_CONTENT_LENGTH'] = 2048 * 1024 * 1024
 
-# Configurações importantes para Neon
+# Configurações para Neon (pool e keep-alive)
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     "pool_pre_ping": True,
     "pool_recycle": 300,
@@ -130,7 +148,7 @@ def setup_database():
         except Exception as e:
             print(f"❌ Erro ao inicializar banco: {e}")
 
-# Registro dos Blueprints
+# ===================== REGISTO DOS BLUEPRINTS =====================
 app.register_blueprint(registrar)
 app.register_blueprint(users_bp)
 app.register_blueprint(date_perfil_user)
@@ -155,7 +173,7 @@ app.register_blueprint(messages_http_bp)
 
 if __name__ == '__main__':
     setup_database()
-    
+
     print("=" * 70)
     print("🚀 Servidor Flask + SocketIO iniciado!")
     print(f"🌍 Porta: {PORT} | Debug: {DEBUG}")
