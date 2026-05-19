@@ -62,7 +62,8 @@ URL_FRONTEND_ANCORA = "http://192.168.11.1:5173"
 CORS(app, resources={r"/*": {
     "origins": [
         "http://127.0.0.1:5173", "http://localhost:5173", 
-        "http://192.168.11.1", "http://10.140.176.115:5173"
+        "http://192.168.11.1", "http://10.140.176.115:5173",
+        "https://ancoras.netlify.app/"
     ],
     "supports_credentials": True,
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
