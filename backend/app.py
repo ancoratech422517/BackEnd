@@ -10,13 +10,16 @@ from flask_talisman import Talisman
 from flask_migrate import Migrate
 import cloudinary
 # ===================== CLOUDINARY =====================
+# ===================== CLOUDINARY (FIX RECURSION ERROR) =====================
 import sys
-sys.setrecursionlimit(15000)   # ← Essencial para evitar o RecursionError
+sys.setrecursionlimit(15000)   # Proteção contra recursão infinita
 
 import urllib3
 urllib3.disable_warnings()
 
-# Configuração do Cloudinary com tentativa de evitar o pool problemático
+import cloudinary
+
+# Configuração normal
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
@@ -24,16 +27,26 @@ cloudinary.config(
     secure=True
 )
 
-# Tenta desabilitar o TCP Keep Alive que está causando o bug
+# === FIX PRINCIPAL: Monkey Patch mais seguro ===
 try:
-    import cloudinary.api_client.tcp_keep_alive_manager as keepalive
-    # Força o uso do pool padrão do urllib3
-    keepalive.TCPKeepAliveHTTPSConnectionPool = None
-    print("✅ TCP Keep Alive do Cloudinary desabilitado")
-except Exception as e:
-    print(f"⚠️ Não foi possível desabilitar TCP Keep Alive: {e}")
+    from cloudinary.api_client.tcp_keep_alive_manager import TCPKeepAliveHTTPSConnectionPool
+    from urllib3 import HTTPSConnectionPool
     
-
+    # Substituímos apenas o método _validate_conn problemático
+    original_validate_conn = TCPKeepAliveHTTPSConnectionPool._validate_conn
+    
+    def safe_validate_conn(self, conn):
+        try:
+            return original_validate_conn(self, conn)
+        except Exception:
+            # Se der erro, usamos o método padrão do HTTPSConnectionPool
+            return HTTPSConnectionPool._validate_conn(self, conn)
+    
+    TCPKeepAliveHTTPSConnectionPool._validate_conn = safe_validate_conn
+    print("✅ Monkey patch do Cloudinary aplicado com sucesso")
+    
+except Exception as e:
+    print(f"⚠️ Falha ao aplicar monkey patch: {e}")
 
 PORT = int(os.environ.get("PORT", 5000))
 DEBUG = os.environ.get("DEBUG", "True") == "True"
