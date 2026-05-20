@@ -11,16 +11,18 @@ from flask_migrate import Migrate
 import cloudinary
 import cloudinary.uploader
 # ===================== CLOUDINARY =====================
-# ===================== CLOUDINARY - FIX FORTE =====================
+# ===================== CLOUDINARY - FIX AGRESSIVO =====================
 import sys
-sys.setrecursionlimit(20000)
+sys.setrecursionlimit(30000)
 
 import urllib3
 urllib3.disable_warnings()
 
 import cloudinary
+from urllib3 import HTTPSConnectionPool
+from urllib3.connectionpool import HTTPConnectionPool
 
-# Configuração principal
+# Configuração
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
@@ -28,23 +30,24 @@ cloudinary.config(
     secure=True
 )
 
-# === FIX FORTE: Desabilita completamente o TCP Keep Alive do Cloudinary ===
+# FIX AGRESSIVO - Substitui completamente as classes problemáticas
 try:
-    from cloudinary.api_client.tcp_keep_alive_manager import TCPKeepAliveHTTPSConnectionPool
-    from urllib3 import HTTPSConnectionPool
+    import cloudinary.api_client.tcp_keep_alive_manager as keep_alive_module
     
-    # Substitui a classe inteira pelo pool padrão do urllib3
-    TCPKeepAliveHTTPSConnectionPool = HTTPSConnectionPool
+    # Substitui tanto o TCP quanto o HTTP pool
+    keep_alive_module.TCPKeepAliveHTTPSConnectionPool = HTTPSConnectionPool
+    keep_alive_module.TCPKeepAliveHTTPConnectionPool = HTTPConnectionPool   # por segurança
+    
+    # Também força no nível do módulo
     cloudinary.api_client.tcp_keep_alive_manager.TCPKeepAliveHTTPSConnectionPool = HTTPSConnectionPool
     
-    print("✅ TCP Keep Alive desabilitado com sucesso (usando pool padrão)")
+    print("✅ TCP Keep Alive substituído completamente pelo pool padrão do urllib3")
     
 except Exception as e:
-    print(f"⚠️ Erro ao desabilitar TCP Keep Alive: {e}")
+    print(f"⚠️ Erro ao aplicar patch: {e}")
 
 cloudinary.uploader.SECURE = True
-print("✅ Cloudinary configurado")
-
+print("✅ Cloudinary configurado (HTTPS forçado)")
 
 
 PORT = int(os.environ.get("PORT", 5000))
