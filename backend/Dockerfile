@@ -13,6 +13,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 5. Copia o restante do código do projeto para dentro do container
 COPY . .
 
-# 7. Comando para rodar a aplicação
-# Se usar WebSockets/Socket.IO com Eventlet/Gevent, o Gunicorn gerencia isso bem:
-CMD gunicorn --worker-class eventlet -w 1 -b 0.0.0.0:${PORT:-5000} app:app
+# 7. Comando para rodar a aplicação usando o motor padrão do Gunicorn.
+# Removido o '--worker-class eventlet' para evitar o erro de falta de pacote.
+CMD gunicorn -w 1 -b 0.0.0.0:${PORT:-5000} app:app
