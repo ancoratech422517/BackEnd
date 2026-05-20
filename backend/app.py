@@ -11,16 +11,14 @@ from flask_migrate import Migrate
 import cloudinary
 import cloudinary.uploader
 # ===================== CLOUDINARY =====================
-# ===================== CLOUDINARY - FIX RECURSION ERROR =====================
+# ===================== CLOUDINARY - FIX FORTE =====================
 import sys
-# Aumenta bastante o limite para evitar o crash
 sys.setrecursionlimit(20000)
 
 import urllib3
 urllib3.disable_warnings()
 
 import cloudinary
-from urllib3 import HTTPSConnectionPool
 
 # Configuração principal
 cloudinary.config(
@@ -30,23 +28,25 @@ cloudinary.config(
     secure=True
 )
 
-# === FIX AGRESSIVO NO TCP KEEP ALIVE ===
+# === FIX FORTE: Desabilita completamente o TCP Keep Alive do Cloudinary ===
 try:
     from cloudinary.api_client.tcp_keep_alive_manager import TCPKeepAliveHTTPSConnectionPool
+    from urllib3 import HTTPSConnectionPool
     
-    # Sobrescrevemos completamente o método problemático
-    def fixed_validate_conn(self, conn):
-        """Versão segura que evita recursão"""
-        if hasattr(HTTPSConnectionPool, '_validate_conn'):
-            return HTTPSConnectionPool._validate_conn(self, conn)
-        # Fallback
-        return super(TCPKeepAliveHTTPSConnectionPool, self)._validate_conn(conn)
+    # Substitui a classe inteira pelo pool padrão do urllib3
+    TCPKeepAliveHTTPSConnectionPool = HTTPSConnectionPool
+    cloudinary.api_client.tcp_keep_alive_manager.TCPKeepAliveHTTPSConnectionPool = HTTPSConnectionPool
     
-    TCPKeepAliveHTTPSConnectionPool._validate_conn = fixed_validate_conn
-    print("✅ Fix do TCP Keep Alive aplicado com sucesso (anti-recursion)")
+    print("✅ TCP Keep Alive desabilitado com sucesso (usando pool padrão)")
     
 except Exception as e:
-    print(f"⚠️ Erro ao aplicar fix: {e}")
+    print(f"⚠️ Erro ao desabilitar TCP Keep Alive: {e}")
+
+cloudinary.uploader.SECURE = True
+print("✅ Cloudinary configurado")
+
+
+
 PORT = int(os.environ.get("PORT", 5000))
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
