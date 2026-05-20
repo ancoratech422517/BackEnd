@@ -10,43 +10,29 @@ from flask_talisman import Talisman
 from flask_migrate import Migrate
 import cloudinary
 # ===================== CLOUDINARY =====================
-# ===================== CLOUDINARY (FIX RECURSION ERROR) =====================
+# ===================== CLOUDINARY (FIX DEFINITIVO) =====================
 import sys
-sys.setrecursionlimit(15000)   # Proteção contra recursão infinita
+sys.setrecursionlimit(15000)
 
 import urllib3
 urllib3.disable_warnings()
 
 import cloudinary
 
-# Configuração normal
+# Configuração FORÇANDO HTTPS
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
     api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-    secure=True
+    secure=True,                    # ← Muito importante
+    private_cdn=False,
+    ssl=True
 )
 
-# === FIX PRINCIPAL: Monkey Patch mais seguro ===
-try:
-    from cloudinary.api_client.tcp_keep_alive_manager import TCPKeepAliveHTTPSConnectionPool
-    from urllib3 import HTTPSConnectionPool
-    
-    # Substituímos apenas o método _validate_conn problemático
-    original_validate_conn = TCPKeepAliveHTTPSConnectionPool._validate_conn
-    
-    def safe_validate_conn(self, conn):
-        try:
-            return original_validate_conn(self, conn)
-        except Exception:
-            # Se der erro, usamos o método padrão do HTTPSConnectionPool
-            return HTTPSConnectionPool._validate_conn(self, conn)
-    
-    TCPKeepAliveHTTPSConnectionPool._validate_conn = safe_validate_conn
-    print("✅ Monkey patch do Cloudinary aplicado com sucesso")
-    
-except Exception as e:
-    print(f"⚠️ Falha ao aplicar monkey patch: {e}")
+# Forçar HTTPS no uploader
+cloudinary.uploader.SECURE = True
+
+print("✅ Cloudinary configurado com HTTPS forçado")
 
 PORT = int(os.environ.get("PORT", 5000))
 DEBUG = os.environ.get("DEBUG", "True") == "True"
