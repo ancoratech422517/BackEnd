@@ -9,6 +9,7 @@ from models.database import db
 from flask_talisman import Talisman
 from flask_migrate import Migrate
 import cloudinary
+import cloudinay.uploader
 # ===================== CLOUDINARY =====================
 # ===================== CLOUDINARY (FIX DEFINITIVO) =====================
 import sys
