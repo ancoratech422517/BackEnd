@@ -3,6 +3,12 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
+from flask import Flask
+from flask_cors import CORS
+from models.database import db
+from flask_talisman import Talisman
+from flask_migrate import Migrate
+import cloudinary
 # ===================== CLOUDINARY =====================
 import sys
 sys.setrecursionlimit(15000)   # ← Essencial para evitar o RecursionError
@@ -27,12 +33,7 @@ try:
 except Exception as e:
     print(f"⚠️ Não foi possível desabilitar TCP Keep Alive: {e}")
     
-from flask import Flask
-from flask_cors import CORS
-from models.database import db
-from flask_talisman import Talisman
-from flask_migrate import Migrate
-import cloudinary
+
 
 PORT = int(os.environ.get("PORT", 5000))
 DEBUG = os.environ.get("DEBUG", "True") == "True"
