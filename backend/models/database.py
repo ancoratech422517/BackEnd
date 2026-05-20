@@ -108,7 +108,7 @@ class Tabel_Reacao_Produto(db.Model):
     id_usuario = db.Column(db.Integer, db.ForeignKey("usuarios.id"), nullable=False)
     
     # 🔥 CORRIGIDO: Deve ser Integer, não Text
-    id_produto = db.Column(db.Integer, nullable=False)  
+    id_produto = db.Column(db.Text, nullable=False , default = "0")  
     
     estado_visualizacao = db.Column(db.Text, nullable=False, default="0")
     estado_adoro = db.Column(db.Text, nullable=False, default="0")
