@@ -3,7 +3,30 @@ from dotenv import load_dotenv
 import os
 
 load_dotenv()
+# ===================== CLOUDINARY =====================
+import sys
+sys.setrecursionlimit(15000)   # ← Essencial para evitar o RecursionError
 
+import urllib3
+urllib3.disable_warnings()
+
+# Configuração do Cloudinary com tentativa de evitar o pool problemático
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True
+)
+
+# Tenta desabilitar o TCP Keep Alive que está causando o bug
+try:
+    import cloudinary.api_client.tcp_keep_alive_manager as keepalive
+    # Força o uso do pool padrão do urllib3
+    keepalive.TCPKeepAliveHTTPSConnectionPool = None
+    print("✅ TCP Keep Alive do Cloudinary desabilitado")
+except Exception as e:
+    print(f"⚠️ Não foi possível desabilitar TCP Keep Alive: {e}")
+    
 from flask import Flask
 from flask_cors import CORS
 from models.database import db
@@ -84,12 +107,6 @@ def after_request(response):
     return response
 
 # ===================== CLOUDINARY =====================
-cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-    secure=True
-)
 
 # ===================== TALISMAN =====================
 Talisman(app,
