@@ -11,30 +11,42 @@ from flask_migrate import Migrate
 import cloudinary
 import cloudinary.uploader
 # ===================== CLOUDINARY =====================
-# ===================== CLOUDINARY (FIX DEFINITIVO) =====================
+# ===================== CLOUDINARY - FIX RECURSION ERROR =====================
 import sys
-sys.setrecursionlimit(15000)
+# Aumenta bastante o limite para evitar o crash
+sys.setrecursionlimit(20000)
 
 import urllib3
 urllib3.disable_warnings()
 
 import cloudinary
+from urllib3 import HTTPSConnectionPool
 
-# Configuração FORÇANDO HTTPS
+# Configuração principal
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
     api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-    secure=True,                    # ← Muito importante
-    private_cdn=False,
-    ssl=True
+    secure=True
 )
 
-# Forçar HTTPS no uploader
-cloudinary.uploader.SECURE = True
-
-print("✅ Cloudinary configurado com HTTPS forçado")
-
+# === FIX AGRESSIVO NO TCP KEEP ALIVE ===
+try:
+    from cloudinary.api_client.tcp_keep_alive_manager import TCPKeepAliveHTTPSConnectionPool
+    
+    # Sobrescrevemos completamente o método problemático
+    def fixed_validate_conn(self, conn):
+        """Versão segura que evita recursão"""
+        if hasattr(HTTPSConnectionPool, '_validate_conn'):
+            return HTTPSConnectionPool._validate_conn(self, conn)
+        # Fallback
+        return super(TCPKeepAliveHTTPSConnectionPool, self)._validate_conn(conn)
+    
+    TCPKeepAliveHTTPSConnectionPool._validate_conn = fixed_validate_conn
+    print("✅ Fix do TCP Keep Alive aplicado com sucesso (anti-recursion)")
+    
+except Exception as e:
+    print(f"⚠️ Erro ao aplicar fix: {e}")
 PORT = int(os.environ.get("PORT", 5000))
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
