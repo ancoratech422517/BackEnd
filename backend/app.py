@@ -65,7 +65,7 @@ CORS(app, resources={r"/*": {
         "http://192.168.11.1",
         "http://192.168.11.1:5173",
         "http://10.140.176.115:5173",
-        "https://ecomerce-ancora.netlify.app"
+        "https://loja-penelaka.netlify.app"
     ],
     "supports_credentials": True,
     "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -77,7 +77,7 @@ CORS(app, resources={r"/*": {
 def after_request(response):
     origin = response.headers.get('Access-Control-Allow-Origin')
     if not origin:
-        response.headers.add('Access-Control-Allow-Origin', 'https://ecomerce-ancora.netlify.app')
+        response.headers.add('Access-Control-Allow-Origin', 'https://loja-penelaka.netlify.app')
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
