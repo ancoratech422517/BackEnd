@@ -28,7 +28,7 @@ def SistemaAdoroAncora():
             else:
                 usuario.estado_adoro = 0
                 estado_adoro_produto = Registrar_produto.query.filter(
-                    Registrar_produto.id == id_produto
+                    Registrar_produto.id == int(id_produto)
                 ).first()
                 estado_adoro_produto.quantidade_adoro_produto = int(estado_adoro_produto.quantidade_adoro_produto) - 1
 
