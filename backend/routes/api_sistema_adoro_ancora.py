@@ -10,7 +10,7 @@ def SistemaAdoroAncora():
         id_produto = dados.get("id_produto")
         usuario = Tabel_Reacao_Produto.query.filter(
             Tabel_Reacao_Produto.id == id_usuario,
-            Tabel_Reacao_Produto.id_produto == int(id_produto)
+            Tabel_Reacao_Produto.id_produto == str(id_produto)
         ).first()
 
         if usuario:
