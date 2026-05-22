@@ -1,11 +1,8 @@
-# app.py
 from dotenv import load_dotenv
 import os
 load_dotenv()
 
-from gevent import monkey
-monkey.patch_all()
-
+# ===================== IMPORTS =====================
 from flask import Flask
 from flask_cors import CORS
 from models.database import db
@@ -20,7 +17,6 @@ sys.setrecursionlimit(30000)
 import urllib3
 urllib3.disable_warnings()
 
-# Configuração Cloudinary
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
@@ -33,11 +29,11 @@ try:
     import cloudinary.api_client.tcp_keep_alive_manager as keep_alive_module
     from urllib3 import HTTPSConnectionPool
     from urllib3.connectionpool import HTTPConnectionPool
-    
+   
     keep_alive_module.TCPKeepAliveHTTPSConnectionPool = HTTPSConnectionPool
     keep_alive_module.TCPKeepAliveHTTPConnectionPool = HTTPConnectionPool
     cloudinary.api_client.tcp_keep_alive_manager.TCPKeepAliveHTTPSConnectionPool = HTTPSConnectionPool
-    
+   
     print("✅ TCP Keep Alive substituído completamente pelo pool padrão do urllib3")
 except Exception as e:
     print(f"⚠️ Erro ao aplicar patch: {e}")
@@ -65,8 +61,7 @@ CORS(app, resources={r"/*": {
 # ===================== AFTER REQUEST =====================
 @app.after_request
 def after_request(response):
-    origin = response.headers.get('Access-Control-Allow-Origin')
-    if not origin:
+    if not response.headers.get('Access-Control-Allow-Origin'):
         response.headers.add('Access-Control-Allow-Origin', 'https://ancora-sales.netlify.app')
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
@@ -83,9 +78,8 @@ Talisman(app,
     strict_transport_security=False
 )
 
-# ===================== BASE DE DADOS (CORRIGIDO) =====================
+# ===================== DATABASE =====================
 DATABASE_URL = os.getenv("DATABASE_URL")
-
 if DATABASE_URL:
     if DATABASE_URL.startswith("postgres://"):
         DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
@@ -120,8 +114,9 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db.init_app(app)
 migrate = Migrate(app, db)
 
+# ===================== SOCKETIO =====================
 from routes.websocket import socketio
-socketio.init_app(app)
+socketio.init_app(app, async_mode='eventlet')   # ← Importante
 
 # ===================== INICIALIZAÇÃO DO BANCO =====================
 def setup_database():
@@ -134,7 +129,7 @@ def setup_database():
 
 setup_database()
 
-# ===================== REGISTO DOS BLUEPRINTS =====================
+# ===================== BLUEPRINTS =====================
 from routes.api_register import registrar
 from routes.api_auth import login_bp
 from routes.api_usuario import users_bp
@@ -186,7 +181,7 @@ if __name__ == '__main__':
     PORT = int(os.environ.get("PORT", 5000))
     DEBUG = os.environ.get("DEBUG", "True") == "True"
     print("=" * 70)
-    print("🚀 Servidor Flask + SocketIO iniciado!")
+    print("🚀 Servidor Flask + SocketIO (Eventlet) iniciado!")
     print(f"🌍 Porta: {PORT} | Debug: {DEBUG}")
     print("=" * 70)
     socketio.run(app, host="0.0.0.0", port=PORT, debug=DEBUG, allow_unsafe_werkzeug=True)
