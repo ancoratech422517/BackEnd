@@ -2,11 +2,10 @@ from flask_socketio import SocketIO, emit, join_room
 from flask import request
 import time
 
-# ===================== SOCKETIO =====================
 socketio = SocketIO(
     logger=True,
     engineio_logger=True,
-    async_mode='eventlet',          # ← Mudado para eventlet
+    async_mode='eventlet',
     cors_allowed_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -19,7 +18,9 @@ socketio = SocketIO(
     async_handlers=True
 )
 
+# Controle anti-spam mais robusto
 ultimo_status_enviado = {}
+ultimo_cleanup = time.time()
 
 def get_current_user():
     try:
@@ -35,19 +36,28 @@ def get_current_user():
             return Usuario.query.get(int(payload['id']))
         return None
     except Exception as e:
-        print(f"❌ Erro get_current_user Socket: {e}")
+        print(f"❌ Erro get_current_user: {e}")
         return None
 
 
 @socketio.on('connect')
 def handle_connect():
+    global ultimo_cleanup
     user = get_current_user()
+    
     if not user:
+        print("❌ Socket: Usuário não autenticado")
         return False
 
     agora = time.time()
-    
-    if (user.id not in ultimo_status_enviado) or (agora - ultimo_status_enviado[user.id] > 8):
+
+    # Cleanup periódico para evitar memória infinita
+    if agora - ultimo_cleanup > 300:  # a cada 5 minutos
+        ultimo_status_enviado.clear()
+        ultimo_cleanup = agora
+
+    # Anti-spam forte: só envia a cada 12 segundos
+    if (user.id not in ultimo_status_enviado) or (agora - ultimo_status_enviado[user.id] > 12):
         ultimo_status_enviado[user.id] = agora
         
         socketio.emit('usuario_status_alterado', {
@@ -64,7 +74,7 @@ def handle_connect():
 def handle_disconnect():
     user = get_current_user()
     if user:
-        print(f"❌ Usuário {user.id} desconectado")
+        print(f"❌ Usuário {user.id} ({user.nome}) → DESCONECTADO")
 
 
 @socketio.on('join')
