@@ -1,8 +1,8 @@
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit, join_room
 from flask import request
 import time
 
-# ===================== CONFIGURAÇÃO SOCKETIO =====================
+# ===================== SOCKETIO =====================
 socketio = SocketIO(
     logger=True,
     engineio_logger=True,
@@ -19,44 +19,41 @@ socketio = SocketIO(
     async_handlers=True
 )
 
-# ===================== CONTROLE ANTI-SPAM =====================
-ultimo_status_enviado = {}  # {user_id: timestamp}
+# Controle anti-spam
+ultimo_status_enviado = {}
 
 
 def get_current_user():
-    """Função para obter o usuário atual a partir do token"""
     try:
         token = request.cookies.get('token_sessao')
         if not token:
             return None
 
-        # Importações dentro da função para evitar circular imports
         from models.usuario import Usuario
-        from utils.auth import decode_token  # Ajuste o caminho se necessário
+        from utils.auth import decode_token   # Ajuste o caminho se for diferente
 
         payload = decode_token(token)
         if payload and 'id' in payload:
-            user = Usuario.query.get(int(payload['id']))
-            return user
+            return Usuario.query.get(int(payload['id']))
         return None
     except Exception as e:
-        print(f"❌ Erro ao decodificar token no Socket: {e}")
+        print(f"❌ Erro no get_current_user (Socket): {e}")
         return None
 
 
-# ===================== EVENTOS =====================
+# ===================== CONEXÃO =====================
 @socketio.on('connect')
 def handle_connect():
     user = get_current_user()
     
     if not user:
-        print("❌ Conexão recusada: Usuário não autenticado")
-        return False  # Rejeita a conexão
+        print("❌ Socket: Usuário não autenticado")
+        return False
 
     agora = time.time()
-    
-    # Proteção contra spam (envia status no máximo a cada 10 segundos)
-    if (user.id not in ultimo_status_enviado) or (agora - ultimo_status_enviado[user.id] > 10):
+
+    # Só envia status a cada 8 segundos (anti-spam forte)
+    if (user.id not in ultimo_status_enviado) or (agora - ultimo_status_enviado[user.id] > 8):
         ultimo_status_enviado[user.id] = agora
         
         socketio.emit('usuario_status_alterado', {
@@ -66,7 +63,7 @@ def handle_connect():
         
         print(f"✅ Usuário {user.id} ({user.nome}) → ONLINE")
     else:
-        print(f"⏭️ Status de {user.id} ignorado (enviado recentemente)")
+        print(f"⏭️ Status ignorado (recente) - User {user.id}")
 
 
 @socketio.on('disconnect')
@@ -74,18 +71,15 @@ def handle_disconnect():
     user = get_current_user()
     if user:
         print(f"❌ Usuário {user.id} ({user.nome}) → DESCONECTADO")
-        # Opcional: enviar offline após 30 segundos (pode ser implementado depois)
 
 
-@socketio.on('message')
-def handle_message(data):
-    print(f"📨 Mensagem recebida via Socket: {data}")
-
-
-# Evento opcional para quando o cliente entra em uma sala
 @socketio.on('join')
 def on_join(data):
     room = data.get('room')
     if room:
         join_room(room)
-        print(f"Usuário entrou na sala: {room}")
+
+
+@socketio.on('message')
+def handle_message(data):
+    print(f"📨 Mensagem Socket: {data}")
