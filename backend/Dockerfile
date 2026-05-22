@@ -13,5 +13,5 @@ USER appuser
 
 EXPOSE ${PORT:-5000}
 
-# CMD corrigido para respeitar o $PORT do Railway + gevent
-CMD ["sh", "-c", "gunicorn --workers 2 --worker-class gevent --bind 0.0.0.0:${PORT:-5000} --timeout 120 --log-level info app:app"]
+# CMD com mais logs e timeout maior
+CMD ["sh", "-c", "echo '=== Iniciando Gunicorn ===' && gunicorn --workers 2 --worker-class gevent --bind 0.0.0.0:${PORT:-5000} --timeout 180 --log-level info app:app"]
