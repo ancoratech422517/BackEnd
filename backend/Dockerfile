@@ -13,18 +13,21 @@ USER appuser
 
 EXPOSE ${PORT:-5000}
 
+# Teste extremo de debug
 CMD ["sh", "-c", "
-    echo '=== INICIANDO APLICAÇÃO ===' &&
+    echo '=== INICIANDO DEBUG ===' &&
     echo \"PORT = \${PORT}\" &&
     python -c '
 from gevent import monkey
 monkey.patch_all()
+print(\"[OK] Monkey patch aplicado\")
 import os
-print(\"=== MONKEY PATCH APLICADO ===\")
-print(\"PORTA:\", os.getenv(\"PORT\"))
+print(\"[OK] PORTA:\", os.getenv(\"PORT\"))
 import app
-print(\"=== APP IMPORTADO COM SUCESSO ===\")
-print(\"App object:\", app.app)
+print(\"[OK] app.py importado com sucesso\")
+print(\"[OK] App object:\", getattr(app, \"app\", None))
+print(\"[OK] Tudo parece bem\")
     ' &&
-    gunicorn --workers 2 --worker-class gevent --bind 0.0.0.0:\${PORT:-5000} --timeout 180 --log-level info app:app
+    echo '=== INICIANDO GUNICORN ===' &&
+    gunicorn --workers 2 --worker-class gevent --bind 0.0.0.0:${PORT:-5000} --timeout 180 --log-level info app:app
 "]
