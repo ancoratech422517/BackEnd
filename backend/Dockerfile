@@ -11,4 +11,5 @@ USER appuser
 
 EXPOSE ${PORT:-5000}
 
-CMD ["sh", "-c", "echo '=== INICIANDO ===' && echo \"PORT=${PORT}\" && gunicorn --workers 2 --worker-class gevent --bind 0.0.0.0:${PORT:-5000} --timeout 180 --log-level info app:app"]
+# Versão mais confiável para expandir a variável PORT
+CMD ["sh", "-c", "echo '=== INICIANDO ===' && echo \"PORT recebido = ${PORT}\" && exec gunicorn --workers 2 --worker-class gevent --bind 0.0.0.0:${PORT:-5000} --timeout 180 --log-level info app:app"]
