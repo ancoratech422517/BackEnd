@@ -114,9 +114,16 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db.init_app(app)
 migrate = Migrate(app, db)
 
-# ===================== SOCKETIO =====================
+# ===================== SOCKETIO (EVENTLET) =====================
 from routes.websocket import socketio
-socketio.init_app(app, async_mode='eventlet')   # ← Importante
+socketio.init_app(
+    app, 
+    async_mode='eventlet',      # ← Essencial para funcionar com Gunicorn
+    logger=True,
+    engineio_logger=True,
+    ping_timeout=60,
+    ping_interval=25
+)
 
 # ===================== INICIALIZAÇÃO DO BANCO =====================
 def setup_database():
