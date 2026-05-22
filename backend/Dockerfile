@@ -11,5 +11,14 @@ USER appuser
 
 EXPOSE ${PORT:-5000}
 
-# CMD corrigido para respeitar o $PORT do Railway
-CMD ["sh", "-c", "echo '=== INICIANDO GUNICORN NO PORT ${PORT} ===' && gunicorn --workers 2 --worker-class gevent --bind 0.0.0.0:${PORT:-5000} --timeout 180 --log-level info app:app"]
+# Versão mais simples e confiável
+CMD sh -c '
+    echo "=== INICIANDO APLICAÇÃO ===" &&
+    echo "PORT recebida: ${PORT}" &&
+    gunicorn --workers 2 \
+             --worker-class gevent \
+             --bind 0.0.0.0:${PORT:-5000} \
+             --timeout 180 \
+             --log-level info \
+             app:app
+'
