@@ -5,9 +5,9 @@ FROM python:3.12-slim
 WORKDIR /app
 
 # Copia requirements primeiro (melhor cache do Docker)
-COPY backend/requirements.txt .
+COPY requirements.txt .          # ← CORRIGIDO
 
-# Instala dependências + gunicorn explicitamente
+# Instala dependências + gunicorn
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
 
 # Copia o resto do código
@@ -17,10 +17,10 @@ COPY . .
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Porta (Render, Railway, Fly.io, etc. usam variável $PORT)
+# Porta
 EXPOSE ${PORT:-5000}
 
-# Comando final - usando worker sync (mais estável para iniciantes)
+# Comando final
 CMD gunicorn --workers 1 \
              --bind 0.0.0.0:${PORT:-5000} \
              --timeout 120 \
