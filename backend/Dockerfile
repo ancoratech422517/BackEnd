@@ -4,14 +4,11 @@ FROM python:3.12-slim
 # Define diretório de trabalho
 WORKDIR /app
 
-# Copia requirements primeiro (melhor cache do Docker)
-COPY requirements.txt .          # ← CORRIGIDO
+# Copia tudo de uma vez (mais confiável)
+COPY . .
 
 # Instala dependências + gunicorn
 RUN pip install --no-cache-dir -r requirements.txt gunicorn
-
-# Copia o resto do código
-COPY . .
 
 # Boa prática: rodar como usuário não-root
 RUN useradd -m appuser && chown -R appuser:appuser /app
