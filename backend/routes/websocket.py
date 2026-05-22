@@ -2,6 +2,7 @@ from flask_socketio import SocketIO, emit, join_room
 from flask import request
 import time
 
+# ===================== SOCKETIO =====================
 socketio = SocketIO(
     logger=True,
     engineio_logger=True,
@@ -18,9 +19,11 @@ socketio = SocketIO(
     async_handlers=True
 )
 
-# Controle anti-spam mais robusto
-ultimo_status_enviado = {}
+# ===================== CONTROLES ANTI-SPAM =====================
+ultimo_status_enviado = {}      # {user_id: timestamp}
+usuarios_conectados = set()     # Para evitar duplicação
 ultimo_cleanup = time.time()
+
 
 def get_current_user():
     try:
@@ -40,45 +43,60 @@ def get_current_user():
         return None
 
 
+# ===================== CONEXÃO =====================
 @socketio.on('connect')
 def handle_connect():
     global ultimo_cleanup
     user = get_current_user()
     
     if not user:
-        print("❌ Socket: Usuário não autenticado")
+        print("❌ Socket recusado: Usuário não autenticado")
         return False
 
     agora = time.time()
 
-    # Cleanup periódico para evitar memória infinita
-    if agora - ultimo_cleanup > 300:  # a cada 5 minutos
+    # Cleanup periódico
+    if agora - ultimo_cleanup > 180:   # a cada 3 minutos
         ultimo_status_enviado.clear()
         ultimo_cleanup = agora
 
-    # Anti-spam forte: só envia a cada 12 segundos
-    if (user.id not in ultimo_status_enviado) or (agora - ultimo_status_enviado[user.id] > 12):
+    # Proteção forte contra spam
+    if user.id in usuarios_conectados:
+        print(f"⏭️ Usuário {user.id} já está marcado como online")
+        return True
+
+    if (user.id not in ultimo_status_enviado) or (agora - ultimo_status_enviado[user.id] > 10):
         ultimo_status_enviado[user.id] = agora
-        
+        usuarios_conectados.add(user.id)
+
         socketio.emit('usuario_status_alterado', {
             "usuario_id": str(user.id),
             "status": "online"
         }, broadcast=True, include_self=True)
-        
+
         print(f"✅ Usuário {user.id} ({user.nome}) → ONLINE")
     else:
-        print(f"⏭️ Status ignorado (recente) - User {user.id}")
+        print(f"⏭️ Status de {user.id} ignorado (muito recente)")
 
 
 @socketio.on('disconnect')
 def handle_disconnect():
     user = get_current_user()
     if user:
-        print(f"❌ Usuário {user.id} ({user.nome}) → DESCONECTADO")
+        if user.id in usuarios_conectados:
+            usuarios_conectados.discard(user.id)
+        print(f"❌ Usuário {user.id} ({user.nome if user else ''}) → DESCONECTADO")
 
 
+# ===================== OUTROS EVENTOS =====================
 @socketio.on('join')
 def on_join(data):
     room = data.get('room')
     if room:
         join_room(room)
+        print(f"Usuário entrou na sala: {room}")
+
+
+@socketio.on('message')
+def handle_message(data):
+    print(f"📨 Mensagem recebida: {data}")
