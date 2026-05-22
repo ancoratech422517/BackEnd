@@ -6,13 +6,12 @@ COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt gunicorn gevent
 
-# Cria usuário não-root
 RUN useradd -m appuser && chown -R appuser:appuser /app
+
 USER appuser
 
 EXPOSE ${PORT:-5000}
 
-# CMD otimizada para Socket.IO
 CMD ["sh", "-c", "
     echo '=== INICIANDO SERVIDOR ===' && 
     echo \"PORT recebido = ${PORT:-5000}\" && 
@@ -23,5 +22,6 @@ CMD ["sh", "-c", "
         --timeout 180 \
         --keep-alive 60 \
         --log-level info \
+        --access-logfile - \
         app:app
 "]
