@@ -6,7 +6,7 @@ import time
 socketio = SocketIO(
     logger=True,
     engineio_logger=True,
-    async_mode='gevent',
+    async_mode='eventlet',          # ← Mudado para eventlet
     cors_allowed_origins=[
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -19,9 +19,7 @@ socketio = SocketIO(
     async_handlers=True
 )
 
-# Controle anti-spam
 ultimo_status_enviado = {}
-
 
 def get_current_user():
     try:
@@ -30,29 +28,25 @@ def get_current_user():
             return None
 
         from models.usuario import Usuario
-        from utils.auth import decode_token   # Ajuste o caminho se for diferente
+        from utils.auth import decode_token
 
         payload = decode_token(token)
         if payload and 'id' in payload:
             return Usuario.query.get(int(payload['id']))
         return None
     except Exception as e:
-        print(f"❌ Erro no get_current_user (Socket): {e}")
+        print(f"❌ Erro get_current_user Socket: {e}")
         return None
 
 
-# ===================== CONEXÃO =====================
 @socketio.on('connect')
 def handle_connect():
     user = get_current_user()
-    
     if not user:
-        print("❌ Socket: Usuário não autenticado")
         return False
 
     agora = time.time()
-
-    # Só envia status a cada 8 segundos (anti-spam forte)
+    
     if (user.id not in ultimo_status_enviado) or (agora - ultimo_status_enviado[user.id] > 8):
         ultimo_status_enviado[user.id] = agora
         
@@ -70,7 +64,7 @@ def handle_connect():
 def handle_disconnect():
     user = get_current_user()
     if user:
-        print(f"❌ Usuário {user.id} ({user.nome}) → DESCONECTADO")
+        print(f"❌ Usuário {user.id} desconectado")
 
 
 @socketio.on('join')
@@ -78,8 +72,3 @@ def on_join(data):
     room = data.get('room')
     if room:
         join_room(room)
-
-
-@socketio.on('message')
-def handle_message(data):
-    print(f"📨 Mensagem Socket: {data}")
