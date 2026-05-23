@@ -10,13 +10,13 @@ from flask_talisman import Talisman
 from flask_migrate import Migrate
 import cloudinary
 import cloudinary.uploader
-
-# ===================== CLOUDINARY =====================
 import sys
-sys.setrecursionlimit(30000)
 import urllib3
+
+sys.setrecursionlimit(30000)
 urllib3.disable_warnings()
 
+# ===================== CLOUDINARY =====================
 cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
@@ -29,16 +29,15 @@ try:
     import cloudinary.api_client.tcp_keep_alive_manager as keep_alive_module
     from urllib3 import HTTPSConnectionPool
     from urllib3.connectionpool import HTTPConnectionPool
-   
+  
     keep_alive_module.TCPKeepAliveHTTPSConnectionPool = HTTPSConnectionPool
     keep_alive_module.TCPKeepAliveHTTPConnectionPool = HTTPConnectionPool
     cloudinary.api_client.tcp_keep_alive_manager.TCPKeepAliveHTTPSConnectionPool = HTTPSConnectionPool
-   
-    print("✅ TCP Keep Alive substituído completamente pelo pool padrão do urllib3")
+    print("✅ TCP Keep Alive substituído com sucesso")
 except Exception as e:
-    print(f"⚠️ Erro ao aplicar patch: {e}")
+    print(f"⚠️ Erro ao aplicar patch TCP: {e}")
 
-print("✅ Cloudinary configurado (HTTPS forçado)")
+print("✅ Cloudinary configurado")
 
 # ===================== FLASK APP =====================
 app = Flask(__name__)
@@ -61,8 +60,7 @@ CORS(app, resources={r"/*": {
 # ===================== AFTER REQUEST =====================
 @app.after_request
 def after_request(response):
-    if not response.headers.get('Access-Control-Allow-Origin'):
-        response.headers.add('Access-Control-Allow-Origin', 'https://ancora-sales.netlify.app')
+    response.headers.add('Access-Control-Allow-Origin', 'https://ancora-sales.netlify.app')
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
     response.headers.add('Access-Control-Allow-Credentials', 'true')
@@ -97,7 +95,7 @@ if DATABASE_URL:
         }
     }
 else:
-    print("⚠️ DATABASE_URL não encontrada → Usando SQLite local")
+    print("⚠️ Usando SQLite local")
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         "pool_pre_ping": True,
         "pool_timeout": 30
@@ -114,15 +112,25 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 db.init_app(app)
 migrate = Migrate(app, db)
 
-# ===================== SOCKETIO (EVENTLET) =====================
+# ===================== SOCKETIO =====================
 from routes.websocket import socketio
+
 socketio.init_app(
-    app, 
-    async_mode='eventlet',      # ← Essencial para funcionar com Gunicorn
+    app,
+    async_mode='eventlet',
     logger=True,
     engineio_logger=True,
     ping_timeout=60,
-    ping_interval=25
+    ping_interval=25,
+    cors_allowed_origins=[
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+        "http://192.168.11.1",
+        "http://192.168.11.1:5173",
+        "http://10.140.176.115:5173",
+        "https://ancora-sales.netlify.app"
+    ],
+    cors_credentials=True
 )
 
 # ===================== INICIALIZAÇÃO DO BANCO =====================
